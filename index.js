@@ -1,10 +1,42 @@
 import express from "express";
 import "dotenv/config";
+import logger from "./logger.js";
+import morgan from "morgan";
+import expressWinston from "express-winston";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+
+/* morgan */
+const morganFormat = ":method :url :status :response-time ms";
+app.use(
+  morgan(morganFormat, {
+    stream: {
+      write(message) {
+        const logObject = {
+          method: message.split(" ")[0],
+          url: message.split(" ")[1],
+          status: message.split(" ")[2],
+          responseTime: message.split(" ")[3],
+        };
+
+        logger.info(JSON.stringify(logObject));
+      },
+    },
+  })
+);
+
+const expressWinstonLogger = expressWinston.logger({
+  winstonInstance: logger,
+  meta: true,
+  msg: "HTTP {{req.method}} {{req.url}} responded with {{res.statusCode}} in {{res.responseTime}}ms",
+  expressFormat: true,
+  colorize: true,
+});
+
+app.use(expressWinstonLogger);
 
 let teaData = [];
 let nextId = 1;
